@@ -60,8 +60,6 @@ static const char* FT_uint32_to_string(uint32 n) {
 
 //=========================== End of configuration section ==================
 
-#include "time_millis.c"
-
 // First cel of timer chained list
 static FT_timer_t* first_cel = NULL;
 
