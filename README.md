@@ -46,22 +46,24 @@ The code uses maybe 5kb, but if you remove the "asserts", you can probably go do
 Ideas to improve it:
 - Making it simple to choose a granularity (say: I want 1 unit = 100ms, with as long as is possible values)
 - Error handling (better than just returning NULL? Do we need that?)
+- Desynchronization: force start of timers to be non-aligned: the algorithm is non-trivial: use of randomize?
 
 Version 2
 ---------
 That's the place where you could implement something more elaborate.
 
 Ideas to be implemented:
-- Activation/deactivation of a timer
+- 64-bit precision for delays (having big and small granularity at the same time) ++
 - More options to control the behaviour of timers, like:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
 - Make it more precise (it's not bad at all with a fine granularity)
 - Modify a timer
 - Make it suitable for multithreading
-- 64-bit precision for delays (having big and small granularity at the same time)
 - Synchronizing two timers (ex: A happens 10ms after B)
+- Activation/deactivation of a timer
 - Being able to start at some time, stop at some time...
+- have "system" timers for special/internal use
 - etc.
 
 Some of these features sound like something really advanced: I would implement them in some kind of "Event" library and keep the FlexTimer simple!
