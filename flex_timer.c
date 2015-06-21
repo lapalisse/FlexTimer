@@ -25,6 +25,39 @@
 //   - repeat = 0  => It's a free cell!
 //   - repeat = n  => repeat n times before removing!
 
+/*
+ * Generic version!
+ */
+static int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
+    if (a < b) {
+        return -1;
+    } else if (a > b) {
+        return 1;
+    } else {
+        // a == b
+        return 0;
+    }
+}
+
+
+/*
+ * Comparison of two integers, assuming they are close
+ *
+ * a and b MUST be unsigned!!!!
+ */
+
+static int FT_compare_to(time_measure_t a, time_measure_t b) {
+    time_measure_t delta;
+    
+    delta = (b - a)&FT_TIME_MEASURE_COMPLETE_MASK;
+    
+    if (delta <= FT_TIME_MEASURE_HALF_MASK) {
+        return FT_unsigned_compare_to(a, b);
+    } else {
+        return -FT_unsigned_compare_to(b, a);
+    }
+}
+
 #ifdef _FT_NORMAL_MS
 //
 // Returns current time in time units
@@ -56,6 +89,7 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
     
     return result;
 }
+
 #endif
 
 
@@ -86,10 +120,11 @@ void FT_sleep_time_units(time_measure_t m) {
 static const char* FT_time_measure_to_string(time_measure_t n) {
     static char result[30];
     
-    sprintf(result, "%d", n);
+    sprintf(result, "%u", n);
     
     return result;
 }
+
 #endif
 
 
@@ -116,9 +151,9 @@ void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m*1000));
 }
 
-//
-// Simple conversion to string of characters, for basic display...
-//
+/*
+ * Simple conversion to string of characters, for basic display...
+ */
 
 #define N (10)
 
@@ -134,7 +169,12 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
     
     return result;
 }
+
+
 #endif
+
+
+
 
 //=========================== End of configuration section ==================
 
@@ -146,47 +186,6 @@ static FT_timer_t* first_cel = NULL;
  */
 void FT_tick(void* not_used_parameter, FT_timer_t* c) {
     printf("%c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time_units()));
-}
-
-/**
- * Comparison of two integers
- *
- * This needs to be improved so it can handle overflow values!
- * Should favour shortest distance between numbers!
- */
-static int FT_compare_to(time_measure_t a, time_measure_t b) {
-    if (a < b) {
-        return -1;
-    } else if (a > b) {
-        return 1;
-    } else {
-        // a == b
-        return 0;
-    }
-}
-
-/*
- * Comparison of two integers, assuming they are close
- *
- * a and b MUST be unsigned!!!!
- */
-static int FT_proxy_compare_to(time_measure_t a, time_measure_t b) {
-    if (a == b) {
-        return 0;
-    } else if (a < b) {
-        if ((b - a) <= INT_MAX) {
-            return 1;
-        } else {
-            return -1;
-        }
-    } else {
-        // a > b
-        if ((a - b) <= INT_MAX) {
-            return -1;
-        } else {
-            return 1;
-        }
-    }
 }
 
 /**
@@ -204,9 +203,9 @@ static int FT_timer_compare_to(FT_timer_t* a, FT_timer_t* b) {
         return 1;
     } else {
         // a should fire at same time than b
-        // but most frequent one has priority
-        return FT_proxy_compare_to(a->delay, b->delay);
-    }//TODO
+        // but most frequent one has priority!
+        return FT_compare_to(a->delay, b->delay);
+    }
 }
 
 /************************************************************************/
@@ -271,6 +270,7 @@ int FT_at_least_one_timer() {
 
 /* MEMORY ALLOCATION */
 
+#ifdef _FT_SIMPLE_TIMER_ALLOCATION
 
 // A simple scheme based on an array
 
@@ -280,7 +280,7 @@ static int current_timer = 0;
 // Initializes the timers to an inactive state!
 //
 //This may not be needed if your computer starts with memory containing zeros...
-void FT_init_timers() {
+void FT_init_timer_alloc() {
     int i;
 
     // Force timers to inactive state!
@@ -335,24 +335,34 @@ static FT_timer_t* FT_new_timer() {
     }
 }
 
+#endif
 
- /*
+#ifdef _FT_TIMER_MALLOC
+
 // Another scheme based on Unix-style memory allocation
 
-void init_timers() {
+void FT_init_timer_alloc() {
     first_cel = NULL;
 }
 
-static void free_timer(timer_t *c) {
+static void FT_free_timer(FT_timer_t *c) {
     free(c);
 }
 
-static timer_t* new_timer() {
-    return (timer_t*)malloc(sizeof(timer_t));
+static FT_timer_t* FT_new_timer() {
+    return (FT_timer_t*)malloc(sizeof(FT_timer_t));
 }
-*/
+
+#endif
 
 /************************************************************************/
+
+static time_measure_t previous_interrupt;
+
+void FT_init_timers() {
+    FT_init_timer_alloc();
+    previous_interrupt = FT_get_time_units();
+}
 
 /*
  * Will fire every timer that needs to, in order.
@@ -371,7 +381,11 @@ static void FT_do_interrupt() {
     c = FT_peek_timer();
     now = c->next_interrupt;
     
-    while (c != NULL && c->next_interrupt <= now) {
+    while (c != NULL
+           //&& (FT_compare_to(c->next_interrupt, previous_interrupt) > 0 && FT_compare_to(c->next_interrupt, now) <= 0)) {
+           //correct: && c->next_interrupt == now) {
+           && FT_compare_to(c->next_interrupt, now) == 0) {
+
         c = FT_pop_timer();
         
         // Execute the command doing the fire
@@ -383,7 +397,8 @@ static void FT_do_interrupt() {
         }
         
         if (c->repeat >= 1 || c->repeat == FT_RUN_FOREVER) {
-            c->next_interrupt = (c->next_interrupt + c->delay)&FT_TIME_MEASURE_COMPLETE_MASK;
+            //c->next_interrupt = (c->next_interrupt + c->delay)&FT_TIME_MEASURE_COMPLETE_MASK;
+            c->next_interrupt = c->next_interrupt + c->delay;
             if (c->repeat > 1 || c->repeat == FT_RUN_FOREVER) {
                 // If timer needs to fire again, we put it in the list again!
                 FT_push_timer(c);
@@ -408,9 +423,11 @@ static void FT_do_interrupt() {
  */
 void FT_check_for_interrupt() {
     if (FT_at_least_one_timer()) {
-        time_t now = FT_get_time_units();
+        time_measure_t now = FT_get_time_units();
         
-        if (first_cel->next_interrupt < now) {
+        //if (FT_compare_to(first_cel->next_interrupt, previous_interrupt) > 0 && FT_compare_to(first_cel->next_interrupt, now) <= 0) {
+        //correct: if (first_cel->next_interrupt <= now) {
+        if (FT_compare_to(first_cel->next_interrupt, now) <= 0) {
             FT_do_interrupt();
         }
     }
@@ -426,7 +443,7 @@ void FT_wait_for_interrupt() {
     if (FT_at_least_one_timer()) {
         time_measure_t delay = first_cel->next_interrupt - FT_get_time_units();
         
-        if (delay > 0) {
+        if (delay > 0 && (delay <= FT_TIME_MEASURE_HALF_MASK)) {
             FT_sleep_time_units(delay);
         }
         
@@ -453,8 +470,8 @@ FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_somethin
     FT_timer_t *c;
     static char display = 'A';
     
-    assert(delay > 0 && delay <= FT_TIME_MEASURE_COMPLETE_MASK);
-    assert((repeat > 0 && repeat <= FT_TIME_MEASURE_COMPLETE_MASK) || repeat == FT_RUN_FOREVER);
+    assert(delay > 0 && delay <= FT_TIME_MEASURE_HALF_MASK);
+    assert(repeat > 0 || repeat == FT_RUN_FOREVER);
     
     c = FT_new_timer();
     c->delay = delay;
@@ -482,7 +499,11 @@ static void FT_debug_timer(FT_timer_t* c) {
     if (c == NULL) {
         printf("NULL\n");
     } else {
-        printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n", c->display, FT_time_measure_to_string(c->delay), FT_time_measure_to_string(c->repeat), FT_time_measure_to_string(c->next_interrupt));
+        printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n",
+               c->display,
+               FT_time_measure_to_string(c->delay),
+               (c->repeat == FT_RUN_FOREVER)?"RUN_FOREVER":FT_time_measure_to_string(c->repeat),
+               FT_time_measure_to_string(c->next_interrupt));
         FT_debug_timer(c->next);
     }
 }
