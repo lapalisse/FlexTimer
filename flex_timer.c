@@ -79,13 +79,21 @@ void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m*1000));
 }
 
-//
-// Simple conversion to string of characters, for basic display...
-//
+/*
+ * Simple conversion to string of characters, for basic display...
+ */
+
+#define N (10)
+
 static const char* FT_time_measure_to_string(time_measure_t n) {
-    static char result[30];
+    static char t[N][30];
+    static int i = 0;
+    char* result;
     
-    sprintf(result, "%d", n);
+    sprintf(t[i], "%d", (int)n);
+    
+    result = t[i];
+    i = (i + 1)%N;
     
     return result;
 }
@@ -114,13 +122,64 @@ void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m));
 }
 
-//
-// Simple conversion to string of characters, for basic display...
-//
+/*
+ * Simple conversion to string of characters, for basic display...
+ */
+
+#define N (10)
+
 static const char* FT_time_measure_to_string(time_measure_t n) {
-    static char result[30];
+    static char t[N][30];
+    static int i = 0;
+    char* result;
     
-    sprintf(result, "%u", n);
+    sprintf(t[i], "%u", (int)n);
+    
+    result = t[i];
+    i = (i + 1)%N;
+    
+    return result;
+}
+
+#endif
+
+
+#ifdef _FT_NORMAL_SECOND
+//
+// Returns current time in time units
+//
+// You can choose the units
+//
+static time_measure_t FT_get_time_units() {
+    struct timeval t;
+    
+    gettimeofday(&t, NULL);
+    
+    return ((time_measure_t)t.tv_sec);
+}
+
+//
+// Have the processor (if possible) sleep for n units of time
+//
+void FT_sleep_time_units(time_measure_t m) {
+    sleep((time_measure_t)m);
+}
+
+/*
+ * Simple conversion to string of characters, for basic display...
+ */
+
+#define N (10)
+
+static const char* FT_time_measure_to_string(time_measure_t n) {
+    static char t[N][30];
+    static int i = 0;
+    char* result;
+    
+    sprintf(t[i], "%d", (int)n);
+    
+    result = t[i];
+    i = (i + 1)%N;
     
     return result;
 }
@@ -170,11 +229,7 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
     return result;
 }
 
-
 #endif
-
-
-
 
 //=========================== End of configuration section ==================
 
@@ -185,7 +240,7 @@ static FT_timer_t* first_cel = NULL;
  * Default action: displays
  */
 void FT_tick(void* not_used_parameter, FT_timer_t* c) {
-    printf("%c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time_units()));
+    printf("Tick %c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time_units()));
 }
 
 /**
@@ -397,8 +452,8 @@ static void FT_do_interrupt() {
         }
         
         if (c->repeat >= 1 || c->repeat == FT_RUN_FOREVER) {
-            //c->next_interrupt = (c->next_interrupt + c->delay)&FT_TIME_MEASURE_COMPLETE_MASK;
-            c->next_interrupt = c->next_interrupt + c->delay;
+            c->next_interrupt = (c->next_interrupt + c->delay)&FT_TIME_MEASURE_COMPLETE_MASK;
+            //correct: c->next_interrupt = c->next_interrupt + c->delay;
             if (c->repeat > 1 || c->repeat == FT_RUN_FOREVER) {
                 // If timer needs to fire again, we put it in the list again!
                 FT_push_timer(c);
