@@ -59,6 +59,7 @@ Ideas to be implemented:
   - Make it more precise, when possible
   - Modify a timer
   - Make it suitable for multithreading
+  - 64 bits precision for delays (having big and small granularity at the same time)
   - etc.
 
 --
