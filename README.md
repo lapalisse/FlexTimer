@@ -19,13 +19,9 @@ I also had the following constraints in mind:
   - putting processor in wait mode to prevent electric consumption 
   - it is not multi-threaded, and will probably never be
 
-
-
 Examples:
-1/ 
-Repeating an action every ms
-2/
-You want to flash a light 10 times, then stop.
+- Repeating an action every n ms
+- You want to flash a light 10 times, then stop.
 
 It is meant to be extremely simple, but also efficient.
 
