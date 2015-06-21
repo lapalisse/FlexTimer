@@ -25,13 +25,12 @@
 //   - repeat = 0  => It's a free cell!
 //   - repeat = n  => repeat n times before removing!
 
-//typedef uint32 time_t;
-
-/*
- * Returns current time in time units
- *
- * You can choose the units
- */
+#ifdef _FT_NORMAL_MS
+//
+// Returns current time in time units
+//
+// You can choose the units
+//
 static time_measure_t FT_get_time_units() {
     struct timeval t;
     
@@ -40,23 +39,102 @@ static time_measure_t FT_get_time_units() {
     return ((time_measure_t)t.tv_sec)*1000 + ((time_measure_t)t.tv_usec)/1000;
 }
 
-/*
- * Have the processor (if possible) sleep for n units of time
- */
+//
+// Have the processor (if possible) sleep for n units of time
+//
 void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m*1000));
 }
 
-/*
- * Simple conversion to string of characters, for basic display...
- */
-static const char* FT_uint32_to_string(time_measure_t n) {
+//
+// Simple conversion to string of characters, for basic display...
+//
+static const char* FT_time_measure_to_string(time_measure_t n) {
     static char result[30];
     
-    sprintf(result, "%ld", n);
+    sprintf(result, "%d", n);
     
     return result;
 }
+#endif
+
+
+#ifdef _FT_NORMAL_uS
+//
+// Returns current time in time units
+//
+// You can choose the units
+//
+static time_measure_t FT_get_time_units() {
+    struct timeval t;
+    
+    gettimeofday(&t, NULL);
+    
+    return ((time_measure_t)t.tv_sec)*1000000 + ((time_measure_t)t.tv_usec);
+}
+
+//
+// Have the processor (if possible) sleep for n units of time
+//
+void FT_sleep_time_units(time_measure_t m) {
+    usleep((time_measure_t)(m));
+}
+
+//
+// Simple conversion to string of characters, for basic display...
+//
+static const char* FT_time_measure_to_string(time_measure_t n) {
+    static char result[30];
+    
+    sprintf(result, "%d", n);
+    
+    return result;
+}
+#endif
+
+
+#ifdef _FT_EXPERIMENTAL
+//
+// Returns current time in time units
+//
+// You can choose the units
+//
+static time_measure_t FT_get_time_units() {
+    struct timeval t;
+    
+    gettimeofday(&t, NULL);
+    
+    return (((time_measure_t)t.tv_sec)*1000 + ((time_measure_t)t.tv_usec)/1000)&FT_TIME_MEASURE_COMPLETE_MASK;
+}
+
+//
+// Have the processor (if possible) sleep for n units of time
+//
+void FT_sleep_time_units(time_measure_t m) {
+    assert(m == (m&FT_TIME_MEASURE_COMPLETE_MASK));
+    
+    usleep((time_measure_t)(m*1000));
+}
+
+//
+// Simple conversion to string of characters, for basic display...
+//
+
+#define N (10)
+
+static const char* FT_time_measure_to_string(time_measure_t n) {
+    static char t[N][30];
+    static int i = 0;
+    char* result;
+    
+    sprintf(t[i], "%d", (int)n);
+    
+    result = t[i];
+    i = (i + 1)%N;
+    
+    return result;
+}
+#endif
 
 //=========================== End of configuration section ==================
 
@@ -67,7 +145,7 @@ static FT_timer_t* first_cel = NULL;
  * Default action: displays
  */
 void FT_tick(void* not_used_parameter, FT_timer_t* c) {
-    printf("%c @ %s\n", c->display, FT_uint32_to_string(FT_get_time_units()));
+    printf("%c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time_units()));
 }
 
 /**
@@ -76,8 +154,7 @@ void FT_tick(void* not_used_parameter, FT_timer_t* c) {
  * This needs to be improved so it can handle overflow values!
  * Should favour shortest distance between numbers!
  */
-static int FT_compare_to(int32 a, int32 b) {
-    //TODO
+static int FT_compare_to(time_measure_t a, time_measure_t b) {
     if (a < b) {
         return -1;
     } else if (a > b) {
@@ -128,8 +205,8 @@ static int FT_timer_compare_to(FT_timer_t* a, FT_timer_t* b) {
     } else {
         // a should fire at same time than b
         // but most frequent one has priority
-        return FT_compare_to(a->delay, b->delay);
-    }
+        return FT_proxy_compare_to(a->delay, b->delay);
+    }//TODO
 }
 
 /************************************************************************/
@@ -306,7 +383,7 @@ static void FT_do_interrupt() {
         }
         
         if (c->repeat >= 1 || c->repeat == FT_RUN_FOREVER) {
-            c->next_interrupt = c->next_interrupt + c->delay;
+            c->next_interrupt = (c->next_interrupt + c->delay)&FT_TIME_MEASURE_COMPLETE_MASK;
             if (c->repeat > 1 || c->repeat == FT_RUN_FOREVER) {
                 // If timer needs to fire again, we put it in the list again!
                 FT_push_timer(c);
@@ -372,13 +449,12 @@ void FT_loop_for_interrupts() {
 /*
  * Inserts a timer in the list with your parameters...
  */
-FT_timer_t* FT_insert_timer(time_measure_t delay, time_measure_t repeat, void (*do_something)(), void* do_it_parameter) {
+FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_something)(), void* do_it_parameter) {
     FT_timer_t *c;
     static char display = 'A';
     
-    assert(delay > 0);
-    assert(delay < FT_TIME_MEASURE_MASK);
-    assert(repeat > 0 || repeat == FT_RUN_FOREVER);
+    assert(delay > 0 && delay <= FT_TIME_MEASURE_COMPLETE_MASK);
+    assert((repeat > 0 && repeat <= FT_TIME_MEASURE_COMPLETE_MASK) || repeat == FT_RUN_FOREVER);
     
     c = FT_new_timer();
     c->delay = delay;
@@ -387,7 +463,7 @@ FT_timer_t* FT_insert_timer(time_measure_t delay, time_measure_t repeat, void (*
     c->do_it = do_something;
     c->parameter = do_it_parameter;
 
-    // Debug
+    // Debug stuff: every timer is associated to a letter!
     display++;
     if (display > 'Z') display = 'A';
     
@@ -406,7 +482,7 @@ static void FT_debug_timer(FT_timer_t* c) {
     if (c == NULL) {
         printf("NULL\n");
     } else {
-        printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n", c->display, FT_uint32_to_string(c->delay), FT_uint32_to_string(c->repeat), FT_uint32_to_string(c->next_interrupt));
+        printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n", c->display, FT_time_measure_to_string(c->delay), FT_time_measure_to_string(c->repeat), FT_time_measure_to_string(c->next_interrupt));
         FT_debug_timer(c->next);
     }
 }
@@ -415,7 +491,7 @@ static void FT_debug_timer(FT_timer_t* c) {
  * Simple display of timer list for debug!
  */
 void FT_debug_timers() {
-    printf("========== Chain of timers is as follows @ %s\n", FT_uint32_to_string(FT_get_time_units()));
+    printf("========== Chain of timers is as follows @ %s\n", FT_time_measure_to_string(FT_get_time_units()));
     FT_debug_timer(first_cel);
 }
 
