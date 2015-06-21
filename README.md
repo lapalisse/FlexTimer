@@ -46,7 +46,7 @@ The code uses maybe 5kb, but if you remove the "asserts", you can probably go do
 Ideas to improve it:
 - Making it simple to choose a granularity (say: I want 1 unit = 100ms, with as long as is possible values)
 - Error handling (better than just returning NULL? Do we need that?)
-- Desynchronization: force start of timers to be non-aligned: the algorithm is non-trivial: use of randomize?
+- Desynchronization: force start of timers to be non-aligned so ticks never happen exactly at the same time: the algorithm is non-trivial and probably quite big: use of randomize is probably as effective, and much more lighter!
 
 Version 2
 ---------
@@ -67,6 +67,8 @@ Ideas to be implemented:
 - etc.
 
 Some of these features sound like something really advanced: I would implement them in some kind of "Event" library and keep the FlexTimer simple!
+
+I think 64-bit timers on 32-bit time handling system is a really good idea, but a little complicated for version 1.
 
 --
 Copyright 2015 Ludovic BERTSCH, ludovic.bertsch@gmail.com
