@@ -83,6 +83,11 @@ typedef unsigned short time_measure_t;
 
 /////////////////////////////////
 
+#define FT_ONE_MINUTE ((FT_ONE_SECOND)*60)
+#define FT_ONE_HOUR   ((FT_ONE_SECOND)*60*60)
+#define FT_ONE_DAY    ((FT_ONE_SECOND)*60*60*24)
+#define FT_ONE_WEEK   ((FT_ONE_SECOND)*60*60*24*7)
+
 typedef struct FT_timer_t {
     time_measure_t delay;           // Delay between 2 ticks! RUN_FOREVER otherwise
     time_measure_t next_interrupt;  // Next tick time
