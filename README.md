@@ -60,11 +60,12 @@ Ideas to be implemented:
 - More options to control the behaviour of timers, like:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
-- Make it more precise, when possible
+- Make it more precise (it's not bad at all with a fine granularity)
 - Modify a timer
 - Make it suitable for multithreading
 - 64-bit precision for delays (having big and small granularity at the same time)
 - Synchronizing two timers (ex: A happens 10ms after B)
+- Being able to start at some time, stop at some time...
 - etc.
 
 Some of these features sound like something really advanced: I would implement them in some kind of "Event" library and keep the FlexTimer simple!
