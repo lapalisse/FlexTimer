@@ -46,22 +46,29 @@ typedef enum {
 #ifdef _FT_NORMAL_MS
 typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2???)
+#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
 #endif
 
 #ifdef _FT_NORMAL_uS
 typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2???)
+#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
 #endif
 
 #ifdef _FT_EXPERIMENTAL
+// 11 bit depth for testing to the limit!
 typedef unsigned short time_measure_t;
-#define FT_TIME_MEASURE_COMPLETE_MASK (2047)
-#define FT_TIME_MEASURE_HALF_MASK (1023)
+//#define FT_TIME_MEASURE_COMPLETE_MASK (2047)
+//#define FT_TIME_MEASURE_HALF_MASK (1023)
+#define FT_TIME_MEASURE_COMPLETE_MASK (8191)
+#define FT_TIME_MEASURE_HALF_MASK (4095)
 #endif
 //////////////////////////////////
+
+#define _FT_SIMPLE_TIMER_ALLOCATION
+//#define _FT_TIMER_MALLOC
+
+/////////////////////////////////
 
 // This could be important: we want some constraints here!
 // INT_MAX would be in theory the best, but... if we miss it, we're screwed!
