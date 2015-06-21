@@ -12,7 +12,7 @@
 
 #include "flextimer.h"
 
-//=========================== Configuration section ==================
+//=========================== Start of configuration section ==================
 
 // This part can be used to configure this timer library
 //
@@ -32,7 +32,7 @@
  *
  * You can choose the units
  */
-static uint32 get_time_units() {
+static uint32 FT_get_time_units() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -43,31 +43,33 @@ static uint32 get_time_units() {
 /*
  * Have the processor (if possible) sleep for n units of time
  */
-void sleep_time_units(uint32 m) {
-    usleep(((uint32)m)*1000);
+void FT_sleep_time_units(uint32 m) {
+    usleep((uint32)(m*1000));
 }
 
 /*
  * Simple conversion to string of characters, for basic display...
  */
-static const char* uint32_to_string(uint32 n) {
+static const char* FT_uint32_to_string(uint32 n) {
     static char result[30];
     
     sprintf(result, "%ld", n);
     
     return result;
 }
-//=========================== Configuration section ==================
 
+//=========================== End of configuration section ==================
+
+#include "time_millis.c"
 
 // First cel of timer chained list
-static timer_t* first_cel = NULL;
+static FT_timer_t* first_cel = NULL;
 
 /*
  * Default action: displays
  */
-void tick(void* not_used_parameter, timer_t* c) {
-    printf("%c @ %s\n", c->display, uint32_to_string(get_time_units()));
+void FT_tick(void* not_used_parameter, FT_timer_t* c) {
+    printf("%c @ %s\n", c->display, FT_uint32_to_string(FT_get_time_units()));
 }
 
 /**
@@ -76,7 +78,7 @@ void tick(void* not_used_parameter, timer_t* c) {
  * This needs to be improved so it can handle overflow values!
  * Should favour shortest distance between numbers!
  */
-int compare_to(int32 a, int32 b) {
+static int FT_compare_to(int32 a, int32 b) {
     //TODO
     if (a < b) {
         return -1;
@@ -89,29 +91,27 @@ int compare_to(int32 a, int32 b) {
 }
 
 /*
- * 
+ * Comparison of two integers, assuming they are close
+ *
  * a and b MUST be unsigned!!!!
  */
-int proxy_compare_to(uint32 a, uint32 b) {
+static int FT_proxy_compare_to(uint32 a, uint32 b) {
     if (a == b) {
         return 0;
     } else if (a < b) {
         if ((b - a) <= INT_MAX) {
             return 1;
         } else {
-            
+            return -1;
         }
     } else {
         // a > b
         if ((a - b) <= INT_MAX) {
             return -1;
         } else {
-            
+            return 1;
         }
     }
-    
-    //TODO REMOVE
-    return 0;
 }
 
 /**
@@ -120,7 +120,7 @@ int proxy_compare_to(uint32 a, uint32 b) {
  * Orders timers' ticks chronologically. If they fire at the
  * very same time, the most frequent one comes first.
  */
-int timer_compare_to(timer_t* a, timer_t* b) {
+static int FT_timer_compare_to(FT_timer_t* a, FT_timer_t* b) {
     if (a->next_interrupt < b->next_interrupt) {
         // a will fire before b
         return -1;
@@ -130,7 +130,7 @@ int timer_compare_to(timer_t* a, timer_t* b) {
     } else {
         // a should fire at same time than b
         // but most frequent one has priority
-        return compare_to(a->delay, b->delay);
+        return FT_compare_to(a->delay, b->delay);
     }
 }
 
@@ -145,7 +145,7 @@ int timer_compare_to(timer_t* a, timer_t* b) {
  *
  * If no timers are in the list, returns NULL.
  */
-static timer_t* peek_timer() {
+static FT_timer_t* FT_peek_timer() {
     return first_cel;
 }
 
@@ -154,8 +154,8 @@ static timer_t* peek_timer() {
  *
  * If no timers are in the list, returns NULL.
  */
-static timer_t* pop_timer() {
-    timer_t* result;
+static FT_timer_t* FT_pop_timer() {
+    FT_timer_t* result;
     
     result = first_cel;
     if (first_cel != NULL) {
@@ -170,14 +170,14 @@ static timer_t* pop_timer() {
  *
  * This function assumes the parameter is not NULL!
  */
-static void push_timer(timer_t* cel) {
-    timer_t** c;
+static void FT_push_timer(FT_timer_t* cel) {
+    FT_timer_t** c;
     
     assert(cel != NULL);
     
     c = &first_cel;
     
-    while ((*c) != NULL && timer_compare_to(cel, (*c)) > 0) {
+    while ((*c) != NULL && FT_timer_compare_to(cel, (*c)) > 0) {
         c = &((*c)->next);
     }
     
@@ -188,7 +188,7 @@ static void push_timer(timer_t* cel) {
 /*
  * Checks if there is at least one timer!
  */
-int at_least_one_timer() {
+int FT_at_least_one_timer() {
     return first_cel != NULL;
 }
 
@@ -199,19 +199,19 @@ int at_least_one_timer() {
 
 // A simple scheme based on an array
 
-static timer_t timers[NB_MAX_TIMERS];
+static FT_timer_t timers[FT_NB_MAX_TIMERS];
 static int current_timer = 0;
 
 // Initializes the timers to an inactive state!
 //
 //This may not be needed if your computer starts with memory containing zeros...
-void init_timers() {
+void FT_init_timers() {
     int i;
 
     // Force timers to inactive state!
     // This may not be needed, depending on the platform you're using!!!
     
-    for (i = 0; i < NB_MAX_TIMERS; i++) {
+    for (i = 0; i < FT_NB_MAX_TIMERS; i++) {
         timers[i].delay = 0; // This is how we know a cell is free!
     }
     
@@ -223,7 +223,7 @@ void init_timers() {
 //
 //Frees a timer!
 //
-static void free_timer(timer_t* c) {
+static void FT_free_timer(FT_timer_t* c) {
     assert(c != NULL);
     
     c->delay = 0; // Mandatory: that's how we know a slot if available!
@@ -239,23 +239,23 @@ static void free_timer(timer_t* c) {
 //
 //Allocates a timer one way or the other...
 //
-static timer_t* new_timer() {
+static FT_timer_t* FT_new_timer() {
     int i;
-    timer_t* result;
+    FT_timer_t* result;
     
     // If limited memory handling: using delay = 0 for free slots!
     i = 0;
-    while (i < NB_MAX_TIMERS && timers[(current_timer + i)%NB_MAX_TIMERS].delay != 0) {
+    while (i < FT_NB_MAX_TIMERS && timers[(current_timer + i)%FT_NB_MAX_TIMERS].delay != 0) {
         i++;
     }
     
-    if (i == NB_MAX_TIMERS) {
+    if (i == FT_NB_MAX_TIMERS) {
         // No slot available!
         return NULL;
     } else {
         // Found a slot, returning it after
-        result = &timers[(current_timer + i)%NB_MAX_TIMERS];
-        current_timer = (current_timer + i + 1)%NB_MAX_TIMERS;
+        result = &timers[(current_timer + i)%FT_NB_MAX_TIMERS];
+        current_timer = (current_timer + i + 1)%FT_NB_MAX_TIMERS;
         return result;
     }
 }
@@ -284,44 +284,44 @@ static timer_t* new_timer() {
  *
  * There needs to be at least one timer ready.
  */
-static void do_interrupt() {
+static void FT_do_interrupt() {
     uint32 now;
-    timer_t *c;
+    FT_timer_t *c;
     
     // There is at least one timer ready to fire!
-    assert(at_least_one_timer());
+    assert(FT_at_least_one_timer());
     
     // Checks the first timer: it will fired, but also every timer
     // which is in time!
-    c = peek_timer();
+    c = FT_peek_timer();
     now = c->next_interrupt;
     
     while (c != NULL && c->next_interrupt <= now) {
-        c = pop_timer();
+        c = FT_pop_timer();
         
         // Execute the command doing the fire
         if (c->do_it != NULL) {
             c->do_it(c->parameter, c);
         } else {
             // Default fire function
-            tick(c->parameter, c);
+            FT_tick(c->parameter, c);
         }
         
-        if (c->repeat >= 1 || c->repeat == RUN_FOREVER) {
+        if (c->repeat >= 1 || c->repeat == FT_RUN_FOREVER) {
             c->next_interrupt = c->next_interrupt + c->delay;
-            if (c->repeat > 1 || c->repeat == RUN_FOREVER) {
+            if (c->repeat > 1 || c->repeat == FT_RUN_FOREVER) {
                 // If timer needs to fire again, we put it in the list again!
-                push_timer(c);
+                FT_push_timer(c);
             }
             // One less firing to be done
-            if (c->repeat != RUN_FOREVER) {
+            if (c->repeat != FT_RUN_FOREVER) {
                 c->repeat--;
             }
         } else {
-            free_timer(c);
+            FT_free_timer(c);
         }
         
-        c = peek_timer();
+        c = FT_peek_timer();
     }
 }
 
@@ -331,12 +331,12 @@ static void do_interrupt() {
  *
  * This is the instruction you want to use everywhere in your code!
  */
-void check_for_interrupt() {
-    if (at_least_one_timer()) {
-        time_t now = get_time_units();
+void FT_check_for_interrupt() {
+    if (FT_at_least_one_timer()) {
+        time_t now = FT_get_time_units();
         
         if (first_cel->next_interrupt < now) {
-            do_interrupt();
+            FT_do_interrupt();
         }
     }
 }
@@ -347,15 +347,15 @@ void check_for_interrupt() {
  *
  * This is the instruction you want to use in your main loop!
  */
-void wait_for_interrupt() {
-    if (at_least_one_timer()) {
-        uint32 delay = first_cel->next_interrupt - get_time_units();
+void FT_wait_for_interrupt() {
+    if (FT_at_least_one_timer()) {
+        uint32 delay = first_cel->next_interrupt - FT_get_time_units();
         
         if (delay > 0) {
-            sleep_time_units(delay);
+            FT_sleep_time_units(delay);
         }
         
-        do_interrupt();
+        FT_do_interrupt();
     }
 }
 
@@ -365,24 +365,24 @@ void wait_for_interrupt() {
  *
  * This could be a main loop!
  */
-void loop_for_interrupts() {
-    while (at_least_one_timer()) {
-        wait_for_interrupt();
+void FT_loop_for_interrupts() {
+    while (FT_at_least_one_timer()) {
+        FT_wait_for_interrupt();
     }
 }
 
 /*
  * Inserts a timer in the list with your parameters...
  */
-timer_t* insert_timer(uint32 delay, uint32 repeat, void (*do_something)(), void* do_it_parameter) {
-    timer_t *c;
+FT_timer_t* FT_insert_timer(uint32 delay, uint32 repeat, void (*do_something)(), void* do_it_parameter) {
+    FT_timer_t *c;
     static char display = 'A';
     
     assert(delay > 0);
     assert(delay < DELAY_MAX_VALUE);
-    assert(repeat > 0 || repeat == RUN_FOREVER);
+    assert(repeat > 0 || repeat == FT_RUN_FOREVER);
     
-    c = new_timer();
+    c = FT_new_timer();
     c->delay = delay;
     c->repeat = repeat;
     c->display = display;
@@ -395,8 +395,8 @@ timer_t* insert_timer(uint32 delay, uint32 repeat, void (*do_something)(), void*
     
     // The following instructions is to be done just before returning!
     // The idea here is to have the timer start as late as we can
-    c->next_interrupt = get_time_units();
-    push_timer(c);
+    c->next_interrupt = FT_get_time_units();
+    FT_push_timer(c);
     
     return c;
 }
@@ -404,19 +404,20 @@ timer_t* insert_timer(uint32 delay, uint32 repeat, void (*do_something)(), void*
 /*
  * Recursive part of debug_timers!
  */
-static void debug_timer(timer_t* c) {
+static void FT_debug_timer(FT_timer_t* c) {
     if (c == NULL) {
         printf("NULL\n");
     } else {
-        printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n", c->display, uint32_to_string(c->delay), uint32_to_string(c->repeat), uint32_to_string(c->next_interrupt));
-        debug_timer(c->next);
+        printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n", c->display, FT_uint32_to_string(c->delay), FT_uint32_to_string(c->repeat), FT_uint32_to_string(c->next_interrupt));
+        FT_debug_timer(c->next);
     }
 }
 
 /*
  * Simple display of timer list for debug!
  */
-void debug_timers() {
-    printf("========== Chain of timers is as follows @ %s\n", uint32_to_string(get_time_units()));
-    debug_timer(first_cel);
+void FT_debug_timers() {
+    printf("========== Chain of timers is as follows @ %s\n", FT_uint32_to_string(FT_get_time_units()));
+    FT_debug_timer(first_cel);
 }
+
