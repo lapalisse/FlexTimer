@@ -49,7 +49,7 @@ The code uses maybe 5kb, but if you remove the "asserts", you can probably go do
 
 Ideas to improve it:
 - Making it simple to choose a granularity (say: I want 1 unit = 100ms, with as long as is possible values)
-- ?
+- Error handling (better than just returning NULL? Do we need that?)
 
 Version 2
 ---------
