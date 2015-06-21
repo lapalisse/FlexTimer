@@ -39,40 +39,49 @@ typedef enum {
 // Configuration section!
 //////////////////////////////////
 
+//#define _FT_NORMAL_SECOND
 #define _FT_NORMAL_MS
 //#define _FT_NORMAL_uS
 //#define _FT_EXPERIMENTAL
+
+
+#ifdef _FT_NORMAL_SECOND
+typedef unsigned int time_measure_t; // 32 bits!
+#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
+#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_ONE_SECOND (1)
+#endif
 
 #ifdef _FT_NORMAL_MS
 typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
 #define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_ONE_SECOND (1000)
 #endif
 
 #ifdef _FT_NORMAL_uS
 typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
 #define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_ONE_SECOND (1000000)
 #endif
 
 #ifdef _FT_EXPERIMENTAL
-// 11 bit depth for testing to the limit!
+// 11 bit depth for testing to the limits!
 typedef unsigned short time_measure_t;
 //#define FT_TIME_MEASURE_COMPLETE_MASK (2047)
 //#define FT_TIME_MEASURE_HALF_MASK (1023)
 #define FT_TIME_MEASURE_COMPLETE_MASK (8191)
 #define FT_TIME_MEASURE_HALF_MASK (4095)
+#define FT_ONE_SECOND (1000)
 #endif
 //////////////////////////////////
 
 #define _FT_SIMPLE_TIMER_ALLOCATION
+//#define _FT_SIMPLE_TIMER_WITH_MALLOC : NOT IMPLEMENTED!!!
 //#define _FT_TIMER_MALLOC
 
 /////////////////////////////////
-
-// This could be important: we want some constraints here!
-// INT_MAX would be in theory the best, but... if we miss it, we're screwed!
-//#define FT_DELAY_MAX_VALUE (INT_MAX/2)
 
 typedef struct FT_timer_t {
     time_measure_t delay;           // Delay between 2 ticks! RUN_FOREVER otherwise
