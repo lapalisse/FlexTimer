@@ -38,20 +38,39 @@ typedef enum {
 //////////////////////////////////
 // Configuration section!
 //////////////////////////////////
-typedef int int32;
-typedef unsigned int uint32;
-typedef uint32 time_measure_t;
-#define FT_TIME_MEASURE_MASK (INT_MAX)
+
+#define _FT_NORMAL_MS
+//#define _FT_NORMAL_uS
+//#define _FT_EXPERIMENTAL
+
+#ifdef _FT_NORMAL_MS
+typedef unsigned int time_measure_t; // 32 bits!
+#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
+
+#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2???)
+#endif
+
+#ifdef _FT_NORMAL_uS
+typedef unsigned int time_measure_t; // 32 bits!
+#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
+#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2???)
+#endif
+
+#ifdef _FT_EXPERIMENTAL
+typedef unsigned short time_measure_t;
+#define FT_TIME_MEASURE_COMPLETE_MASK (2047)
+#define FT_TIME_MEASURE_HALF_MASK (1023)
+#endif
 //////////////////////////////////
 
 // This could be important: we want some constraints here!
 // INT_MAX would be in theory the best, but... if we miss it, we're screwed!
-#define FT_DELAY_MAX_VALUE (INT_MAX/2)
+//#define FT_DELAY_MAX_VALUE (INT_MAX/2)
 
 typedef struct FT_timer_t {
     time_measure_t delay;           // Delay between 2 ticks! RUN_FOREVER otherwise
     time_measure_t next_interrupt;  // Next tick time
-    time_measure_t repeat;          // How many repeats
+    int repeat;          // How many repeats
     struct FT_timer_t* next;   // Next timer in list (chronologically ordered)
     char display;           // 'A' to 'Z' character for display
     void (*do_it)();        // Action to perform at tick
@@ -65,7 +84,7 @@ extern int FT_at_least_one_timer();
 extern void FT_check_for_interrupt();
 extern void FT_wait_for_interrupt();
 extern void FT_loop_for_interrupts();
-extern FT_timer_t* FT_insert_timer(time_measure_t delay, time_measure_t repeat, void (*do_something)(), void* do_it_paramter);
+extern FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_something)(), void* do_it_paramter);
 
 extern void FT_sleep_time_units(time_measure_t delay);
 
