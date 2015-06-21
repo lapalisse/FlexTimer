@@ -32,25 +32,25 @@
  *
  * You can choose the units
  */
-static uint32 FT_get_time_units() {
+static time_measure_t FT_get_time_units() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
     
-    return ((uint32)t.tv_sec)*1000 + ((uint32)t.tv_usec)/1000;
+    return ((time_measure_t)t.tv_sec)*1000 + ((time_measure_t)t.tv_usec)/1000;
 }
 
 /*
  * Have the processor (if possible) sleep for n units of time
  */
-void FT_sleep_time_units(uint32 m) {
-    usleep((uint32)(m*1000));
+void FT_sleep_time_units(time_measure_t m) {
+    usleep((time_measure_t)(m*1000));
 }
 
 /*
  * Simple conversion to string of characters, for basic display...
  */
-static const char* FT_uint32_to_string(uint32 n) {
+static const char* FT_uint32_to_string(time_measure_t n) {
     static char result[30];
     
     sprintf(result, "%ld", n);
@@ -93,7 +93,7 @@ static int FT_compare_to(int32 a, int32 b) {
  *
  * a and b MUST be unsigned!!!!
  */
-static int FT_proxy_compare_to(uint32 a, uint32 b) {
+static int FT_proxy_compare_to(time_measure_t a, time_measure_t b) {
     if (a == b) {
         return 0;
     } else if (a < b) {
@@ -283,7 +283,7 @@ static timer_t* new_timer() {
  * There needs to be at least one timer ready.
  */
 static void FT_do_interrupt() {
-    uint32 now;
+    time_measure_t now;
     FT_timer_t *c;
     
     // There is at least one timer ready to fire!
@@ -347,7 +347,7 @@ void FT_check_for_interrupt() {
  */
 void FT_wait_for_interrupt() {
     if (FT_at_least_one_timer()) {
-        uint32 delay = first_cel->next_interrupt - FT_get_time_units();
+        time_measure_t delay = first_cel->next_interrupt - FT_get_time_units();
         
         if (delay > 0) {
             FT_sleep_time_units(delay);
@@ -372,12 +372,12 @@ void FT_loop_for_interrupts() {
 /*
  * Inserts a timer in the list with your parameters...
  */
-FT_timer_t* FT_insert_timer(uint32 delay, uint32 repeat, void (*do_something)(), void* do_it_parameter) {
+FT_timer_t* FT_insert_timer(time_measure_t delay, time_measure_t repeat, void (*do_something)(), void* do_it_parameter) {
     FT_timer_t *c;
     static char display = 'A';
     
     assert(delay > 0);
-    assert(delay < DELAY_MAX_VALUE);
+    assert(delay < FT_TIME_MEASURE_MASK);
     assert(repeat > 0 || repeat == FT_RUN_FOREVER);
     
     c = FT_new_timer();
