@@ -17,6 +17,7 @@ I also had the following constraints in mind:
   - being easy to use on modern systems with little effort (ex: on Unix systems)
   - it can run on modern systems too, and be quite efficient
   - putting processor in wait mode to prevent electric consumption 
+  - it is not multi-threaded, and will probably never be
 
 
 
@@ -32,8 +33,9 @@ Implementations details:
 ------------------------
 The FlexTimer library uses a chained list to neatly handle the future events. It always knows what are the next events to come and when they'll come. 
 
-
 The precision of the ticks is absolutely not guaranteed, but it is not that bad, after all, and coding it by hand is not going to be any better anyway!
+
+If several ticks happen on the exact same time (ex: on the same millisecond), they will be ordered based on the delay from smallest to biggest.
 
 Version 1
 ---------
@@ -55,6 +57,8 @@ Ideas to be implemented:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
   - Make it more precise, when possible
+  - Modify a timer
+  - Make it suitable for multithreading
   - etc.
 
 --
