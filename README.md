@@ -9,20 +9,22 @@ I also had the following constraints in mind:
   - use as little memory as possible
   - be flexible on the following points:
      - memory handling scheme (malloc, fixed array, etc.)
-     - time handling: you can choose the time units you want to use (ms, us, s) with little efforts
+     - time handling: you can choose the time units you want to use (ms, us, s) with little effort
      - loop handling: you have a few options here
   - being able to handle time overflow, so you don't have to! 
     (ex: microseconds in a 32 bits environment start over in 70 minutes: you don't want to care about that)
   - real added value: it will free you of thinking of a lot of problems
   - being easy to use on modern systems with little effort (ex: on Unix systems)
   - it can run on modern systems too, and be quite efficient
+  - putting processor in wait mode to prevent electric consumption 
 
 
 
 Examples:
 1/ 
+Repeating an action every ms
 2/
-You want to flash a light 10 times.
+You want to flash a light 10 times, then stop.
 
 It is meant to be extremely simple, but also efficient.
 
@@ -40,6 +42,8 @@ I want 'verion 1' to stay as it is: the set of tools you have is minimalistic, b
 Maybe what's needed is a few examples of memory handling and time handling (with different granularities)
 
 There may be some bugs, even if I couldn't find any, but feel free to let me know of any problems!
+
+The code uses maybe 5kb, but if you remove the "asserts", you can probably go down to 3...
 
 Version 2
 ---------
