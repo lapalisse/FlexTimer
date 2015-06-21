@@ -52,3 +52,6 @@ Ideas to be implemented:
   - Choose between remove a timer when finished or deactivate
   - Make it more precise, when possible
   - etc.
+
+--
+Copyright 2015 Ludovic BERTSCH, ludovic.bertsch@gmail.com
