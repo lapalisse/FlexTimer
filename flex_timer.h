@@ -34,17 +34,24 @@ typedef enum {
 // Super important value: size of timer array (limited memory allocation scheme)
 #define FT_NB_MAX_TIMERS (10)
 
-typedef long int32;
-typedef unsigned long uint32;
+
+//////////////////////////////////
+// Configuration section!
+//////////////////////////////////
+typedef int int32;
+typedef unsigned int uint32;
+typedef uint32 time_measure_t;
+#define FT_TIME_MEASURE_MASK (INT_MAX)
+//////////////////////////////////
 
 // This could be important: we want some constraints here!
 // INT_MAX would be in theory the best, but... if we miss it, we're screwed!
-#define DELAY_MAX_VALUE (INT_MAX/2)
+#define FT_DELAY_MAX_VALUE (INT_MAX/2)
 
 typedef struct FT_timer_t {
-    uint32 delay;           // Delay between 2 ticks! RUN_FOREVER otherwise
-    uint32 next_interrupt;  // Next tick time
-    uint32 repeat;          // How many repeats
+    time_measure_t delay;           // Delay between 2 ticks! RUN_FOREVER otherwise
+    time_measure_t next_interrupt;  // Next tick time
+    time_measure_t repeat;          // How many repeats
     struct FT_timer_t* next;   // Next timer in list (chronologically ordered)
     char display;           // 'A' to 'Z' character for display
     void (*do_it)();        // Action to perform at tick
@@ -58,8 +65,8 @@ extern int FT_at_least_one_timer();
 extern void FT_check_for_interrupt();
 extern void FT_wait_for_interrupt();
 extern void FT_loop_for_interrupts();
-extern FT_timer_t* FT_insert_timer(uint32 delay, uint32 repeat, void (*do_something)(), void* do_it_paramter);
+extern FT_timer_t* FT_insert_timer(time_measure_t delay, time_measure_t repeat, void (*do_something)(), void* do_it_paramter);
 
-extern void FT_sleep_time_units(uint32 delay);
+extern void FT_sleep_time_units(time_measure_t delay);
 
 #endif
