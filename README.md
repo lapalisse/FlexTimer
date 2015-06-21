@@ -47,6 +47,10 @@ There may be some bugs, even if I couldn't find any, but feel free to let me kno
 
 The code uses maybe 5kb, but if you remove the "asserts", you can probably go down to 3...
 
+Ideas to improve it:
+- Making it simple to choose a granularity (say: I want 1 unit = 100ms, with as long as is possible values)
+- ?
+
 Version 2
 ---------
 That's the place where you could implement something more elaborate.
