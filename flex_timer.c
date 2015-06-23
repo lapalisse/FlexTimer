@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #include "flextimer.h"
 
 //=========================== Start of configuration section ==================
@@ -39,7 +38,6 @@ static int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
     }
 }
 
-
 /*
  * Comparison of two integers, assuming they are close
  *
@@ -58,13 +56,72 @@ static int FT_compare_to(time_measure_t a, time_measure_t b) {
     }
 }
 
+/*
+ * Simple conversion to string of characters, for basic display...
+ *
+ * If you don't understand how this functions, do not use it!
+ */
+
+#define FT_NB_SIMULTANEOUS_ITOA (10)
+
+static const char* FT_time_measure_to_string(time_measure_t n) {
+    static char t[FT_NB_SIMULTANEOUS_ITOA][30];
+    static int i = 0;
+    char* result;
+    
+    sprintf(t[i], "%u", (unsigned int)n);
+    
+    result = t[i];
+    i = (i + 1)%FT_NB_SIMULTANEOUS_ITOA;
+    
+    return result;
+}
+
+#ifdef _FT_ARDUINO_MS
+//
+// Returns current time in time units
+//
+// You can choose the units
+//
+time_measure_t FT_get_time_units() {
+    return getMillis();
+}
+
+//
+// Have the processor (if possible) sleep for n units of time
+//
+void FT_sleep_time_units(time_measure_t m) {
+    sleepMillis(m);
+}
+#endif
+
+#ifdef _FT_ARDUINO_uS
+//
+// Returns current time in time units
+//
+// You can choose the units
+//
+time_measure_t FT_get_time_units() {
+    return getMicros();
+}
+
+//
+// Have the processor (if possible) sleep for n units of time
+//
+void FT_sleep_time_units(time_measure_t m) {
+    sleepMillis(m/1000);
+    sleepMicros(m%1000);
+}
+#endif
+
+
 #ifdef _FT_NORMAL_MS
 //
 // Returns current time in time units
 //
 // You can choose the units
 //
-static time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time_units() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -79,25 +136,6 @@ void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m*1000));
 }
 
-/*
- * Simple conversion to string of characters, for basic display...
- */
-
-#define N (10)
-
-static const char* FT_time_measure_to_string(time_measure_t n) {
-    static char t[N][30];
-    static int i = 0;
-    char* result;
-    
-    sprintf(t[i], "%d", (int)n);
-    
-    result = t[i];
-    i = (i + 1)%N;
-    
-    return result;
-}
-
 #endif
 
 
@@ -107,7 +145,7 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
 //
 // You can choose the units
 //
-static time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time_units() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -122,25 +160,6 @@ void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m));
 }
 
-/*
- * Simple conversion to string of characters, for basic display...
- */
-
-#define N (10)
-
-static const char* FT_time_measure_to_string(time_measure_t n) {
-    static char t[N][30];
-    static int i = 0;
-    char* result;
-    
-    sprintf(t[i], "%u", (int)n);
-    
-    result = t[i];
-    i = (i + 1)%N;
-    
-    return result;
-}
-
 #endif
 
 
@@ -150,7 +169,7 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
 //
 // You can choose the units
 //
-static time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time_units() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -162,26 +181,7 @@ static time_measure_t FT_get_time_units() {
 // Have the processor (if possible) sleep for n units of time
 //
 void FT_sleep_time_units(time_measure_t m) {
-    sleep((time_measure_t)m);
-}
-
-/*
- * Simple conversion to string of characters, for basic display...
- */
-
-#define N (10)
-
-static const char* FT_time_measure_to_string(time_measure_t n) {
-    static char t[N][30];
-    static int i = 0;
-    char* result;
-    
-    sprintf(t[i], "%d", (int)n);
-    
-    result = t[i];
-    i = (i + 1)%N;
-    
-    return result;
+    sleep(m);
 }
 
 #endif
@@ -193,7 +193,7 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
 //
 // You can choose the units
 //
-static time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time_units() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -210,28 +210,26 @@ void FT_sleep_time_units(time_measure_t m) {
     usleep((time_measure_t)(m*1000));
 }
 
-/*
- * Simple conversion to string of characters, for basic display...
- */
-
-#define N (10)
-
-static const char* FT_time_measure_to_string(time_measure_t n) {
-    static char t[N][30];
-    static int i = 0;
-    char* result;
-    
-    sprintf(t[i], "%d", (int)n);
-    
-    result = t[i];
-    i = (i + 1)%N;
-    
-    return result;
-}
-
 #endif
 
 //=========================== End of configuration section ==================
+
+/*
+ * Equivalent of FT_sleep_units, but really really wait for the elapsed time to end.
+ */
+void FT_force_sleep_time_units(time_measure_t some_time) {
+    time_measure_t now, theoretical_end;
+    
+    theoretical_end = (FT_get_time_units() + some_time)%FT_TIME_MEASURE_COMPLETE_MASK;
+    
+    FT_sleep_time_units(some_time);
+    
+    now = FT_get_time_units();
+    while (FT_compare_to(now, theoretical_end) <= 0) {
+        FT_sleep_time_units((theoretical_end - now)%FT_TIME_MEASURE_COMPLETE_MASK); // TODO Hesitation??????
+        now = FT_get_time_units();
+    }
+}
 
 // First cel of timer chained list
 static FT_timer_t* first_cel = NULL;
@@ -239,8 +237,15 @@ static FT_timer_t* first_cel = NULL;
 /*
  * Default action: displays
  */
-void FT_tick(void* not_used_parameter, FT_timer_t* c) {
+void FT_do_tick(void* not_used_parameter, FT_timer_t* c) {
     printf("Tick %c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time_units()));
+}
+
+/*
+ * Not really useful... Or is it?
+ */
+void FT_do_nothing(void* not_used_parameter, FT_timer_t* c) {
+    // Nothing!
 }
 
 /**
@@ -405,14 +410,16 @@ static void FT_free_timer(FT_timer_t *c) {
 }
 
 static FT_timer_t* FT_new_timer() {
-    return (FT_timer_t*)malloc(sizeof(FT_timer_t));
+    FT_timer_t* result = (FT_timer_t*)malloc(sizeof(FT_timer_t));
+    
+    return result;
 }
 
 #endif
 
 /************************************************************************/
 
-static time_measure_t previous_interrupt;
+static time_measure_t previous_interrupt; // TO BE USED FOR OVERFLOW??? MAYBE NOT
 
 void FT_init_timers() {
     FT_init_timer_alloc();
@@ -448,7 +455,7 @@ static void FT_do_interrupt() {
             c->do_it(c->parameter, c);
         } else {
             // Default fire function
-            FT_tick(c->parameter, c);
+            FT_do_tick(c->parameter, c);
         }
         
         if (c->repeat >= 1 || c->repeat == FT_RUN_FOREVER) {
@@ -499,7 +506,7 @@ void FT_wait_for_interrupt() {
         time_measure_t delay = first_cel->next_interrupt - FT_get_time_units();
         
         if (delay > 0 && (delay <= FT_TIME_MEASURE_HALF_MASK)) {
-            FT_sleep_time_units(delay);
+            FT_force_sleep_time_units(delay);
         }
         
         FT_do_interrupt();
@@ -552,7 +559,7 @@ FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_somethin
  */
 static void FT_debug_timer(FT_timer_t* c) {
     if (c == NULL) {
-        printf("NULL\n");
+        printf("[NULL]\n");
     } else {
         printf("[%c: delay = %s, repeat = %s, next_interrupt = %s]\n",
                c->display,
@@ -569,5 +576,46 @@ static void FT_debug_timer(FT_timer_t* c) {
 void FT_debug_timers() {
     printf("========== Chain of timers is as follows @ %s\n", FT_time_measure_to_string(FT_get_time_units()));
     FT_debug_timer(first_cel);
+    printf("========== Chain of timers - the end\n");
 }
 
+/*
+static void FT_int_desynchronize(int* *integer, int nb_integers, int delta[]) {
+    // Who wants to code it?
+    // Or simply use randomize!!!
+}
+
+void FT_desynchronize(int* *timer_t, int nb_timers) {
+    // Who wants to code it?
+    // Or simply use randomize!!!
+}
+*/
+
+/*
+ * Program the timer to start randomly instead of asap.
+ *
+ * Useful when you want the timer to not fire at the same time!
+ *
+ * You MUST call this before starting any loop.
+ */
+void FT_randomize_timer(FT_timer_t* timer) {
+    //timer->next_interrupt += random(timer->delay);
+    timer->next_interrupt += (((long)rand())*timer->delay)/RAND_MAX;
+}
+
+/*
+ * Program all timers to start randomly instead of asap.
+ *
+ * Useful when you want all timers to not fire at the same time!
+ *
+ * You MUST call this before starting any loop.
+ */
+void FT_randomize_all_timers() {
+    FT_timer_t *current;
+    
+    current = first_cel;
+    while (current != NULL) {
+        FT_randomize_timer(current);
+        current = current->next;
+    }
+}
