@@ -44,8 +44,12 @@ static int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
  * a and b MUST be unsigned!!!!
  */
 
-static int FT_compare_to(time_measure_t a, time_measure_t b) {
+//TODO static
+
+int FT_compare_to(time_measure_t a, time_measure_t b) {
     time_measure_t delta;
+    
+    printf("FT_compare_to(%u, %u)\n", a, b);
     
     delta = (b - a)&FT_TIME_MEASURE_COMPLETE_MASK;
     
@@ -83,14 +87,14 @@ static const char* FT_time_measure_to_string(time_measure_t n) {
 //
 // You can choose the units
 //
-time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time() {
     return getMillis();
 }
 
 //
 // Have the processor (if possible) sleep for n units of time
 //
-void FT_sleep_time_units(time_measure_t m) {
+void FT_sleep(time_measure_t m) {
     sleepMillis(m);
 }
 #endif
@@ -101,14 +105,14 @@ void FT_sleep_time_units(time_measure_t m) {
 //
 // You can choose the units
 //
-time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time() {
     return getMicros();
 }
 
 //
 // Have the processor (if possible) sleep for n units of time
 //
-void FT_sleep_time_units(time_measure_t m) {
+void FT_sleep(time_measure_t m) {
     sleepMillis(m/1000);
     sleepMicros(m%1000);
 }
@@ -121,7 +125,7 @@ void FT_sleep_time_units(time_measure_t m) {
 //
 // You can choose the units
 //
-time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -132,7 +136,7 @@ time_measure_t FT_get_time_units() {
 //
 // Have the processor (if possible) sleep for n units of time
 //
-void FT_sleep_time_units(time_measure_t m) {
+void FT_sleep(time_measure_t m) {
     usleep((time_measure_t)(m*1000));
 }
 
@@ -145,7 +149,7 @@ void FT_sleep_time_units(time_measure_t m) {
 //
 // You can choose the units
 //
-time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -156,7 +160,7 @@ time_measure_t FT_get_time_units() {
 //
 // Have the processor (if possible) sleep for n units of time
 //
-void FT_sleep_time_units(time_measure_t m) {
+void FT_sleep(time_measure_t m) {
     usleep((time_measure_t)(m));
 }
 
@@ -169,7 +173,7 @@ void FT_sleep_time_units(time_measure_t m) {
 //
 // You can choose the units
 //
-time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -180,7 +184,7 @@ time_measure_t FT_get_time_units() {
 //
 // Have the processor (if possible) sleep for n units of time
 //
-void FT_sleep_time_units(time_measure_t m) {
+void FT_sleep(time_measure_t m) {
     sleep(m);
 }
 
@@ -193,7 +197,7 @@ void FT_sleep_time_units(time_measure_t m) {
 //
 // You can choose the units
 //
-time_measure_t FT_get_time_units() {
+time_measure_t FT_get_time() {
     struct timeval t;
     
     gettimeofday(&t, NULL);
@@ -204,10 +208,14 @@ time_measure_t FT_get_time_units() {
 //
 // Have the processor (if possible) sleep for n units of time
 //
-void FT_sleep_time_units(time_measure_t m) {
+void FT_sleep(time_measure_t m) {
     assert(m == (m&FT_TIME_MEASURE_COMPLETE_MASK));
     
-    usleep((time_measure_t)(m*1000));
+    int err = usleep((time_measure_t)(m*1000));
+    
+    if (err != 0) {
+        printf("USLEEP ERROR!!!\n");
+    }
 }
 
 #endif
@@ -215,30 +223,64 @@ void FT_sleep_time_units(time_measure_t m) {
 //=========================== End of configuration section ==================
 
 /*
- * Equivalent of FT_sleep_units, but really really wait for the elapsed time to end.
+ * Force time to be limited by mask...
  */
-void FT_force_sleep_time_units(time_measure_t some_time) {
-    time_measure_t now, theoretical_end;
-    
-    theoretical_end = (FT_get_time_units() + some_time)%FT_TIME_MEASURE_COMPLETE_MASK;
-    
-    FT_sleep_time_units(some_time);
-    
-    now = FT_get_time_units();
-    while (FT_compare_to(now, theoretical_end) <= 0) {
-        FT_sleep_time_units((theoretical_end - now)%FT_TIME_MEASURE_COMPLETE_MASK); // TODO Hesitation??????
-        now = FT_get_time_units();
+time_measure_t FT_force_get_time() {
+    return FT_get_time()&FT_TIME_MEASURE_COMPLETE_MASK;
+}
+
+void FT_force_sleep_internal(time_measure_t some_time) {
+    if (some_time > 0) {
+        while (some_time > FT_LONGEST_SLEEP) {
+            FT_sleep(FT_LONGEST_SLEEP);
+            some_time -= FT_LONGEST_SLEEP;
+        }
+        
+        if (some_time != 0) {
+            FT_sleep(some_time);
+        }
     }
 }
 
+/*
+ * Equivalent of FT_sleep_units, but really really wait for the elapsed time to end.
+ *
+ * There seems to be a bug with Mac OS X: get_time may hang for some time, and then catch up,
+ * so you don't want to do more than one sleep... Silly!
+ */
+void FT_force_sleep(time_measure_t some_time) {
+    printf("FT_force_sleep(): started @ %u\n", (unsigned)FT_get_time());
+    
+    time_measure_t now, theoretical_end;
+    
+    theoretical_end = (FT_get_time() + some_time)&FT_TIME_MEASURE_COMPLETE_MASK;
+    
+    printf("FT_sleep: have to wait: %u\n", (unsigned) ((theoretical_end - FT_get_time())&FT_TIME_MEASURE_COMPLETE_MASK));
+
+    printf("FT_sleep: avant: %u\n", (unsigned) (FT_get_time()));
+    FT_force_sleep_internal(some_time);
+    printf("FT_sleep: apres: %u\n", (unsigned) (FT_get_time()));
+
+    now = FT_get_time();
+    while (FT_compare_to(now, theoretical_end) < 0) {
+        printf("FT_sleep: %u\n", (unsigned) ((theoretical_end - now)&FT_TIME_MEASURE_COMPLETE_MASK));
+#       ifdef FT_TRUST_SLEEP
+        FT_force_sleep_internal((theoretical_end - now)&FT_TIME_MEASURE_COMPLETE_MASK); // TODO Hesitation??????
+#       endif
+        now = FT_get_time();
+    }
+    
+    printf("FT_force_sleep(): finished @ %u!\n", (unsigned) FT_get_time());
+}
+
 // First cel of timer chained list
-static FT_timer_t* first_cel = NULL;
+static FT_timer_t* first_cell = NULL;
 
 /*
  * Default action: displays
  */
 void FT_do_tick(void* not_used_parameter, FT_timer_t* c) {
-    printf("Tick %c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time_units()));
+    printf("Tick %c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time()));
 }
 
 /*
@@ -264,6 +306,7 @@ static int FT_timer_compare_to(FT_timer_t* a, FT_timer_t* b) {
     } else {
         // a should fire at same time than b
         // but most frequent one has priority!
+        // Also, RUN_FOREVER WILL come before other values!
         return FT_compare_to(a->delay, b->delay);
     }
 }
@@ -280,7 +323,7 @@ static int FT_timer_compare_to(FT_timer_t* a, FT_timer_t* b) {
  * If no timers are in the list, returns NULL.
  */
 static FT_timer_t* FT_peek_timer() {
-    return first_cel;
+    return first_cell;
 }
 
 /*
@@ -291,9 +334,9 @@ static FT_timer_t* FT_peek_timer() {
 static FT_timer_t* FT_pop_timer() {
     FT_timer_t* result;
     
-    result = first_cel;
-    if (first_cel != NULL) {
-        first_cel = first_cel->next;
+    result = first_cell;
+    if (first_cell != NULL) {
+        first_cell = first_cell->next;
     }
     
     return result;
@@ -309,7 +352,7 @@ static void FT_push_timer(FT_timer_t* cel) {
     
     assert(cel != NULL);
     
-    c = &first_cel;
+    c = &first_cell;
     
     while ((*c) != NULL && FT_timer_compare_to(cel, (*c)) > 0) {
         c = &((*c)->next);
@@ -323,7 +366,7 @@ static void FT_push_timer(FT_timer_t* cel) {
  * Checks if there is at least one timer!
  */
 int FT_at_least_one_timer() {
-    return first_cel != NULL;
+    return first_cell != NULL;
 }
 
 /************************************************************************/
@@ -352,7 +395,7 @@ void FT_init_timer_alloc() {
     
     current_timer = 0;
     
-    first_cel = NULL;
+    first_cell = NULL;
 }
 
 //
@@ -419,11 +462,8 @@ static FT_timer_t* FT_new_timer() {
 
 /************************************************************************/
 
-static time_measure_t previous_interrupt; // TO BE USED FOR OVERFLOW??? MAYBE NOT
-
 void FT_init_timers() {
     FT_init_timer_alloc();
-    previous_interrupt = FT_get_time_units();
 }
 
 /*
@@ -453,9 +493,6 @@ static void FT_do_interrupt() {
         // Execute the command doing the fire
         if (c->do_it != NULL) {
             c->do_it(c->parameter, c);
-        } else {
-            // Default fire function
-            FT_do_tick(c->parameter, c);
         }
         
         if (c->repeat >= 1 || c->repeat == FT_RUN_FOREVER) {
@@ -485,11 +522,11 @@ static void FT_do_interrupt() {
  */
 void FT_check_for_interrupt() {
     if (FT_at_least_one_timer()) {
-        time_measure_t now = FT_get_time_units();
+        time_measure_t now = FT_get_time();
         
         //if (FT_compare_to(first_cel->next_interrupt, previous_interrupt) > 0 && FT_compare_to(first_cel->next_interrupt, now) <= 0) {
         //correct: if (first_cel->next_interrupt <= now) {
-        if (FT_compare_to(first_cel->next_interrupt, now) <= 0) {
+        if (FT_compare_to(first_cell->next_interrupt, now) <= 0) {
             FT_do_interrupt();
         }
     }
@@ -503,10 +540,10 @@ void FT_check_for_interrupt() {
  */
 void FT_wait_for_interrupt() {
     if (FT_at_least_one_timer()) {
-        time_measure_t delay = first_cel->next_interrupt - FT_get_time_units();
+        time_measure_t delay = first_cell->next_interrupt - FT_get_time();
         
         if (delay > 0 && (delay <= FT_TIME_MEASURE_HALF_MASK)) {
-            FT_force_sleep_time_units(delay);
+            FT_force_sleep(delay);
         }
         
         FT_do_interrupt();
@@ -532,15 +569,19 @@ FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_somethin
     FT_timer_t *c;
     static char display = 'A';
     
-    assert(delay > 0 && delay <= FT_TIME_MEASURE_HALF_MASK);
+    assert(delay > 0 && delay <= FT_TIME_MEASURE_QUARTER_MASK);
     assert(repeat > 0 || repeat == FT_RUN_FOREVER);
     
     c = FT_new_timer();
     c->delay = delay;
     c->repeat = repeat;
     c->display = display;
-    c->do_it = do_something;
     c->parameter = do_it_parameter;
+    if (do_something != NULL) {
+        c->do_it = do_something;
+    } else {
+        c->do_it = &FT_do_tick;
+    }
 
     // Debug stuff: every timer is associated to a letter!
     display++;
@@ -548,7 +589,7 @@ FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_somethin
     
     // The following instructions is to be done just before returning!
     // The idea here is to have the timer start as late as we can
-    c->next_interrupt = FT_get_time_units();
+    c->next_interrupt = FT_get_time();
     FT_push_timer(c);
     
     return c;
@@ -574,8 +615,8 @@ static void FT_debug_timer(FT_timer_t* c) {
  * Simple display of timer list for debug!
  */
 void FT_debug_timers() {
-    printf("========== Chain of timers is as follows @ %s\n", FT_time_measure_to_string(FT_get_time_units()));
-    FT_debug_timer(first_cel);
+    printf("========== Chain of timers is as follows @ %s\n", FT_time_measure_to_string(FT_get_time()));
+    FT_debug_timer(first_cell);
     printf("========== Chain of timers - the end\n");
 }
 
@@ -613,7 +654,7 @@ void FT_randomize_timer(FT_timer_t* timer) {
 void FT_randomize_all_timers() {
     FT_timer_t *current;
     
-    current = first_cel;
+    current = first_cell;
     while (current != NULL) {
         FT_randomize_timer(current);
         current = current->next;
