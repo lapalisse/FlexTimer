@@ -42,56 +42,69 @@ typedef enum {
 //#define _FT_ARDUINO_MS
 //#define _FT_ARDUINO_uS
 //#define _FT_NORMAL_SECOND
-#define _FT_NORMAL_MS
+//#define _FT_NORMAL_MS
 //#define _FT_NORMAL_uS
-//#define _FT_EXPERIMENTAL
+//#define _FT_EXPERIMENTAL1
+#define _FT_EXPERIMENTAL2
 
 
 #ifdef _FT_ARDUINO_MS
 typedef unsigned int time_measure_t; // 32 bits!
-#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
+#define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
 #endif
 
 #ifdef _FT_ARDUINO_uS
 typedef unsigned int time_measure_t; // 32 bits!
-#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
+#define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000000)
 #endif
 
 #ifdef _FT_NORMAL_SECOND
 typedef unsigned int time_measure_t; // 32 bits!
-#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
+#define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1)
 #endif
 
 #ifdef _FT_NORMAL_MS
 typedef unsigned int time_measure_t; // 32 bits!
-#define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
+#define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
 #endif
 
 #ifdef _FT_NORMAL_uS
 typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
-#define FT_TIME_MEASURE_HALF_MASK (INT_MAX/2)
+#define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000000)
 #endif
 
-#ifdef _FT_EXPERIMENTAL
+#ifdef _FT_EXPERIMENTAL1
+// 11 bit depth for testing to the limits!
+typedef unsigned int time_measure_t;
+#define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
+#define FT_LONGEST_SLEEP (100)
+#define FT_ONE_SECOND (1000)
+#define _FT_EXPERIMENTAL
+#endif
+
+#ifdef _FT_EXPERIMENTAL2
 // 11 bit depth for testing to the limits!
 typedef unsigned short time_measure_t;
 //#define FT_TIME_MEASURE_COMPLETE_MASK (2047)
-//#define FT_TIME_MEASURE_HALF_MASK (1023)
 #define FT_TIME_MEASURE_COMPLETE_MASK (8191)
-#define FT_TIME_MEASURE_HALF_MASK (4095)
+#define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
+#define _FT_EXPERIMENTAL
 #endif
 //////////////////////////////////
+
+#define FT_TIME_MEASURE_HALF_MASK (FT_TIME_MEASURE_COMPLETE_MASK/2)
+#define FT_TIME_MEASURE_QUARTER_MASK (FT_TIME_MEASURE_COMPLETE_MASK/4)
 
 #define _FT_SIMPLE_TIMER_ALLOCATION
 //#define _FT_SIMPLE_TIMER_WITH_MALLOC : NOT IMPLEMENTED!!!
@@ -137,9 +150,12 @@ extern void FT_randomize_all_timers();
 extern void FT_randomize_timer(FT_timer_t* timer);
 
 // Maybe it's better to use these than the direct ones?
-extern time_measure_t FT_get_time_units();
-extern void FT_sleep_time_units(time_measure_t delay);
-extern void FT_force_sleep_time_units(time_measure_t delay);
+extern time_measure_t FT_get_time();
+extern void FT_sleep(time_measure_t delay);
+
+// Forcing!!
+extern time_measure_t FT_force_get_time(); // The value will be bounded
+extern void FT_force_sleep(time_measure_t delay); // *Will* sleep
 
 #endif
 
