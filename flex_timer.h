@@ -42,10 +42,10 @@ typedef enum {
 //#define _FT_ARDUINO_MS
 //#define _FT_ARDUINO_uS
 //#define _FT_NORMAL_SECOND
-//#define _FT_NORMAL_MS
+#define _FT_NORMAL_MS
 //#define _FT_NORMAL_uS
 //#define _FT_EXPERIMENTAL1
-#define _FT_EXPERIMENTAL2
+//#define _FT_EXPERIMENTAL2
 
 
 #ifdef _FT_ARDUINO_MS
@@ -133,8 +133,9 @@ extern void FT_debug_timers();
 // Published interface:
 extern void FT_init_timers();
 extern int FT_at_least_one_timer();
-extern void FT_check_for_interrupt();
-extern void FT_wait_for_interrupt();
+extern void FT_check_and_do();
+extern void FT_sleep_and_do();
+extern void FT_force_sleep_and_do();
 extern void FT_loop_for_interrupts();
 extern FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_something)(), void* do_it_paramter);
 
@@ -156,6 +157,10 @@ extern void FT_sleep(time_measure_t delay);
 // Forcing!!
 extern time_measure_t FT_force_get_time(); // The value will be bounded
 extern void FT_force_sleep(time_measure_t delay); // *Will* sleep
+
+
+////
+extern int FT_compare_to(time_measure_t a, time_measure_t b);
 
 #endif
 
