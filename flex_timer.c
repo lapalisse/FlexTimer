@@ -27,7 +27,8 @@
 /*
  * Generic version!
  */
-static int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
+//static
+/*int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
     if (a < b) {
         return -1;
     } else if (a > b) {
@@ -36,7 +37,7 @@ static int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
         // a == b
         return 0;
     }
-}
+}*/
 
 /*
  * Comparison of two integers, assuming they are close
@@ -49,14 +50,18 @@ static int FT_unsigned_compare_to(time_measure_t a, time_measure_t b) {
 int FT_compare_to(time_measure_t a, time_measure_t b) {
     time_measure_t delta;
     
-    printf("FT_compare_to(%u, %u)\n", a, b);
+    //printf("FT_compare_to(%u, %u)\n", a, b);
+    
+    if (a == b) {
+        return 0;
+    }
     
     delta = (b - a)&FT_TIME_MEASURE_COMPLETE_MASK;
     
     if (delta <= FT_TIME_MEASURE_HALF_MASK) {
-        return FT_unsigned_compare_to(a, b);
+        return -1;
     } else {
-        return -FT_unsigned_compare_to(b, a);
+        return 1;
     }
 }
 
@@ -229,7 +234,10 @@ time_measure_t FT_force_get_time() {
     return FT_get_time()&FT_TIME_MEASURE_COMPLETE_MASK;
 }
 
-void FT_force_sleep_internal(time_measure_t some_time) {
+/*
+ * Don't do anything if zero, break the sleep in several pieces...
+ */
+static void FT_sleep_internal(time_measure_t some_time) {
     if (some_time > 0) {
         while (some_time > FT_LONGEST_SLEEP) {
             FT_sleep(FT_LONGEST_SLEEP);
@@ -241,6 +249,7 @@ void FT_force_sleep_internal(time_measure_t some_time) {
         }
     }
 }
+
 
 /*
  * Equivalent of FT_sleep_units, but really really wait for the elapsed time to end.
@@ -258,14 +267,14 @@ void FT_force_sleep(time_measure_t some_time) {
     printf("FT_sleep: have to wait: %u\n", (unsigned) ((theoretical_end - FT_get_time())&FT_TIME_MEASURE_COMPLETE_MASK));
 
     printf("FT_sleep: avant: %u\n", (unsigned) (FT_get_time()));
-    FT_force_sleep_internal(some_time);
+    FT_sleep_internal(some_time);
     printf("FT_sleep: apres: %u\n", (unsigned) (FT_get_time()));
 
     now = FT_get_time();
     while (FT_compare_to(now, theoretical_end) < 0) {
         printf("FT_sleep: %u\n", (unsigned) ((theoretical_end - now)&FT_TIME_MEASURE_COMPLETE_MASK));
 #       ifdef FT_TRUST_SLEEP
-        FT_force_sleep_internal((theoretical_end - now)&FT_TIME_MEASURE_COMPLETE_MASK); // TODO Hesitation??????
+        FT_sleep_internal((theoretical_end - now)&FT_TIME_MEASURE_COMPLETE_MASK); // TODO Hesitation??????
 #       endif
         now = FT_get_time();
     }
@@ -280,7 +289,7 @@ static FT_timer_t* first_cell = NULL;
  * Default action: displays
  */
 void FT_do_tick(void* not_used_parameter, FT_timer_t* c) {
-    printf("Tick %c @ %s\n", c->display, FT_time_measure_to_string(FT_get_time()));
+    printf("Tick %c @ %s\n", c->display, FT_time_measure_to_string(FT_force_get_time()));
 }
 
 /*
@@ -477,6 +486,7 @@ static void FT_do_interrupt() {
     
     // There is at least one timer ready to fire!
     assert(FT_at_least_one_timer());
+    //printf("FT_do_interrupt()\n");
     
     // Checks the first timer: it will fired, but also every timer
     // which is in time!
@@ -520,9 +530,9 @@ static void FT_do_interrupt() {
  *
  * This is the instruction you want to use everywhere in your code!
  */
-void FT_check_for_interrupt() {
+void FT_check_and_do() {
     if (FT_at_least_one_timer()) {
-        time_measure_t now = FT_get_time();
+        time_measure_t now = FT_force_get_time();
         
         //if (FT_compare_to(first_cel->next_interrupt, previous_interrupt) > 0 && FT_compare_to(first_cel->next_interrupt, now) <= 0) {
         //correct: if (first_cel->next_interrupt <= now) {
@@ -538,7 +548,30 @@ void FT_check_for_interrupt() {
  *
  * This is the instruction you want to use in your main loop!
  */
-void FT_wait_for_interrupt() {
+void FT_sleep_and_do() {
+    if (FT_at_least_one_timer()) {
+        time_measure_t now = FT_force_get_time();
+        time_measure_t delay = (first_cell->next_interrupt - now)&FT_TIME_MEASURE_COMPLETE_MASK;
+        
+        if (delay != 0 && ((delay&FT_TIME_MEASURE_HALF_MASK) == delay)) {
+            FT_sleep_internal(delay);
+        }
+        
+        //if (FT_compare_to(first_cel->next_interrupt, previous_interrupt) > 0 && FT_compare_to(first_cel->next_interrupt, now) <= 0) {
+        //correct: if (first_cel->next_interrupt <= now) {
+        if (FT_compare_to(first_cell->next_interrupt, now) <= 0) {
+            FT_do_interrupt();
+        }
+    }
+}
+
+/*
+ * Checks and fire if some timers needs to fire.
+ * May wait if needed!
+ *
+ * This is the instruction you want to use in your main loop!
+ */
+void FT_force_sleep_and_do() {
     if (FT_at_least_one_timer()) {
         time_measure_t delay = first_cell->next_interrupt - FT_get_time();
         
@@ -558,7 +591,7 @@ void FT_wait_for_interrupt() {
  */
 void FT_loop_for_interrupts() {
     while (FT_at_least_one_timer()) {
-        FT_wait_for_interrupt();
+        FT_sleep_and_do();
     }
 }
 
@@ -569,7 +602,7 @@ FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_somethin
     FT_timer_t *c;
     static char display = 'A';
     
-    assert(delay > 0 && delay <= FT_TIME_MEASURE_QUARTER_MASK);
+    assert(delay > 0 && delay <= FT_TIME_MEASURE_QUARTER_MASK); // You have to set a limit and HALF is risky!
     assert(repeat > 0 || repeat == FT_RUN_FOREVER);
     
     c = FT_new_timer();
