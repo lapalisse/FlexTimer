@@ -35,18 +35,18 @@ If several ticks happen on the exact same time (ex: on the same millisecond), th
 
 Version 1
 ---------
-I want 'verion 1' to stay as it is: the set of tools you have is minimalistic, but it makes sense to not add anything: it is meant for simplicity and you don't want it to use to much space (ex: on Arduino)...
+I want 'verion 1' to stay as it is: the set of tools you have is minimalistic, but it makes sense to not add anything: it is meant for simplicity and you don't want it to use too much space (ex: on Arduino with 30kb of RAM)...
 
 Maybe what's needed is a few examples of memory handling and time handling (with different granularities)
 
 There may be some bugs, even if I couldn't find any, but feel free to let me know of any problems!
 
-The code uses maybe 5kb, but if you remove the "asserts", you can probably go down to 3...
+The code uses maybe 5kb, but if you deaactivate FT_PARANOIA (that will remove the "asserts"), you can probably go down to 3...
 
 Ideas to improve it:
 - Making it simple to choose a granularity (say: I want 1 unit = 15ms, with as long as is possible values)
 - Error handling (better than just returning NULL? Do we need that? No)
-- Desynchronization: force start of timers to be non-aligned so ticks never happen exactly at the same time: the algorithm is non-trivial and probably quite big: use of randomize is probably as effective, and much more lighter!
+- Desynchronization: force start of timers to be non-aligned so ticks never happen exactly at the same time: the algorithms to do this feature are non-trivial and probably quite big: use of randomize_all_timers() or spread_all_timers() is probably as effective, and much more lighter!
 
 Version 2
 ---------
@@ -57,7 +57,7 @@ Ideas to be implemented:
 - More options to control the behaviour of timers, like:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
-- Make it more precise (it's not bad at all with a fine granularity)
+- Make it more precise (it's already not bad at all with a fine granularity)
 - Modify a timer
 - Make it suitable for multithreading
 - Synchronizing two timers (ex: A happens 10ms after B)
@@ -69,6 +69,10 @@ Ideas to be implemented:
 Some of these features sound like something really advanced: I would implement them in some kind of "Event" library and keep the FlexTimer simple!
 
 I think 64-bit timers on 32-bit time handling system is a really good idea, but a little complicated for version 1.
+
+Other version:
+--------------
+A C++ version is needed and believe me, it's going to be great!
 
 --
 Copyright 2015 Ludovic BERTSCH, ludovic.bertsch@gmail.com
