@@ -18,6 +18,7 @@ I also had the following constraints in mind:
   - it can run on modern systems too, and be quite efficient
   - putting processor in wait mode to prevent electric consumption 
   - it is not meant to be multi-threaded (and will probably never be), or you need just one thread to handle the timers...
+  - the granularity of the calls is the same than the precision of time function (ex: if your unit is the ms, your code will not do anything more precise that 1ms)
 
 Examples:
 - Repeating an action every n ms
