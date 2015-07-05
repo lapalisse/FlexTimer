@@ -22,6 +22,7 @@ I also had the following constraints in mind:
 Examples:
 - Repeating an action every n ms
 - You want to flash a light 10 times, then stop.
+- Do one thing after some time!
 
 It is meant to be extremely simple, but also efficient.
 
