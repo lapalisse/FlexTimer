@@ -11,13 +11,13 @@ I also had the following constraints in mind:
      - memory handling scheme (malloc, fixed array, etc.)
      - time handling: you can choose the time units you want to use (ms, us, s) with little effort
      - loop handling: you have a few options here
-  - being able to handle time overflow, so you don't have to! 
-    (ex: microseconds in a 32 bits environment start over in 70 minutes: you don't want to care about that)
+  - being able to handle time/integer overflow, so you don't have to! 
+    (ex: microseconds in a 32 bits environment start over at 0 after about 70 minutes: you don't want to care about that: the library does it for you)
   - real added value: it will free you of thinking of a lot of problems
   - being easy to use on modern systems with little effort (ex: on Unix systems)
   - it can run on modern systems too, and be quite efficient
   - putting processor in wait mode to prevent electric consumption 
-  - it is not multi-threaded, and will probably never be
+  - it is not meant to be multi-threaded (and will probably never be), or you need just one thread to handle the timers...
 
 Examples:
 - Repeating an action every n ms
@@ -44,8 +44,8 @@ There may be some bugs, even if I couldn't find any, but feel free to let me kno
 The code uses maybe 5kb, but if you remove the "asserts", you can probably go down to 3...
 
 Ideas to improve it:
-- Making it simple to choose a granularity (say: I want 1 unit = 100ms, with as long as is possible values)
-- Error handling (better than just returning NULL? Do we need that?)
+- Making it simple to choose a granularity (say: I want 1 unit = 15ms, with as long as is possible values)
+- Error handling (better than just returning NULL? Do we need that? No)
 - Desynchronization: force start of timers to be non-aligned so ticks never happen exactly at the same time: the algorithm is non-trivial and probably quite big: use of randomize is probably as effective, and much more lighter!
 
 Version 2
