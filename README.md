@@ -6,11 +6,12 @@ Basically, the goal of this project is:
   especially on systems where you don't have elaborate interrupt options (think Arduino vs Linux)
   
 I also had the following constraints in mind:
-  - use as little memory as possible
+  - use as little memory as possible, yet provide real functionalities
   - be flexible on the following points:
-     - memory handling scheme (malloc, fixed array, etc.)
+     - memory handling scheme (malloc, fixed array, mixed)
      - time handling: you can choose the time units you want to use (ms, us, s) with little effort
      - loop handling: you have a few options here
+     - modify the delay between 2 repeats is possible
   - being able to handle time/integer overflow, so you don't have to! 
     (ex: microseconds in a 32 bits environment start over at 0 after about 70 minutes: you don't want to care about that: the library does it for you)
   - real added value: it will free you of thinking of a lot of problems
@@ -19,6 +20,9 @@ I also had the following constraints in mind:
   - putting processor in wait mode to prevent electric consumption 
   - it is not meant to be multi-threaded (and will probably never be), or you need just one thread to handle the timers...
   - the granularity of the calls is the same than the precision of time function (ex: if your unit is the ms, your code will not do anything more precise that 1ms)
+  - reasonably easy customization (using #defines)
+  - Important: it has to be executed in one thread
+  - it is easy to adapt to other systems (ex: Unix)
 
 Examples:
 - Repeating an action every n ms
@@ -44,6 +48,16 @@ Maybe what's needed is a few examples of memory handling and time handling (with
 There may be some bugs, even if I couldn't find any, but feel free to let me know of any problems!
 
 The code uses maybe 5kb, but if you deaactivate FT_PARANOIA (that will remove the "asserts"), you can probably go down to 3...
+
+Summary of functionalities:
+- repeat some action (once, a certain number of times, forever)
+- handle 32-bit overflow automatically
+- millisecond granularity is default (but you can change this by recompiling with different parameters)
+- meant for Arduino (but works fine with Unix too: you need to recompile)
+- some control over alignment of tasks (you can desynchronize tasks)
+
+What you won't be able to do:
+- 
 
 Ideas to improve it:
 - Making it simple to choose a granularity (say: I want 1 unit = 15ms, with as long as is possible values)
