@@ -47,7 +47,7 @@ Maybe what's needed is a few examples of memory handling and time handling (with
 
 There may be some bugs, even if I couldn't find any, but feel free to let me know of any problems!
 
-The code uses maybe 5kb, but if you deaactivate FT_PARANOIA (that will remove the "asserts"), you can probably go down to 3...
+The code uses maybe 5kb, but if you deactivate FT_PARANOIA (that will remove the "asserts"), you can probably go down to 3...
 
 Summary of functionalities:
 - repeat some action (once, a certain number of times, forever)
@@ -55,13 +55,14 @@ Summary of functionalities:
 - millisecond granularity is default (but you can change this by recompiling with different parameters)
 - meant for Arduino (but works fine with Unix too: you need to recompile)
 - some control over alignment of tasks (you can desynchronize tasks)
+- some control over modification of timers
+- monothread-oriented: not suitable for multi-threading
 
-What you won't be able to do:
-- do actions in different threads: everything must be in one unique thread
-- 
+Limitation:
+- biggest delay is theoretically limited to 2^31-1, but this is a dangerous limit: miss one ms and it is broken: we use the value (2^31-1)/3
 
 Ideas to improve it:
-- Making it simple to choose a granularity (say: I want 1 unit = 15ms, with as long as is possible values)
+- Making it simpler to choose a granularity (say: I want 1 unit = 15ms, with as long as is possible values)
 - Error handling (better than just returning NULL? Do we need that? No)
 - Desynchronization: force start of timers to be non-aligned so ticks never happen exactly at the same time: the algorithms to do this feature are non-trivial and probably quite big: use of randomize_all_timers() or spread_all_timers() is probably as effective, and much more lighter!
 
@@ -70,18 +71,18 @@ Version 2
 That's the place where you could implement something more elaborate.
 
 Ideas to be implemented:
-- 64-bit precision for delays (having big and small granularity at the same time) ++
+- Activation/deactivation of a timer
 - More options to control the behaviour of timers, like:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
-- Make it more precise (it's already not bad at all with a fine granularity)
-- Modify a timer
-- Make it suitable for multithreading
+- C++ interface
 - Synchronizing two timers (ex: A happens 10ms after B)
-- Activation/deactivation of a timer
-- Being able to start at some time, stop at some time...
-- have "system" timers for special/internal use
-- etc.
+- 64-bit precision for delays (having big and small granularity at the same time)
+- Make it more precise (it's already not bad at all with a fine granularity)
+- Modify a timer: already possible
+  - Being able to start at some time, stop at some time...
+- Make it suitable for multithreading: no: not needed: you don't want to
+- have "system" timers for special/internal use: no really needed
 
 Some of these features sound like something really advanced: I would implement them in some kind of "Event" library and keep the FlexTimer simple!
 
