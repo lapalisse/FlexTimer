@@ -57,6 +57,7 @@ Summary of functionalities:
 - some control over alignment of tasks (you can desynchronize tasks)
 
 What you won't be able to do:
+- do actions in different threads: everything must be in one unique thread
 - 
 
 Ideas to improve it:
