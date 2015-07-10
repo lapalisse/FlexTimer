@@ -42,17 +42,21 @@ typedef enum {
 //#define _FT_ARDUINO_MS
 //#define _FT_ARDUINO_uS
 //#define _FT_NORMAL_SECOND
-#define _FT_NORMAL_MS
+//#define _FT_NORMAL_MS
 //#define _FT_NORMAL_uS
 //#define _FT_EXPERIMENTAL1
-//#define _FT_EXPERIMENTAL2
+#define _FT_EXPERIMENTAL2
 
+// Define the following for more checks! Basically these will be asserts...
+// Use this while debugging, then remove it when you're sufficiently confident!
+#define FT_PARANOIA
 
 #ifdef _FT_ARDUINO_MS
 typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
+#define _FT_ARDUINO
 #endif
 
 #ifdef _FT_ARDUINO_uS
@@ -60,6 +64,7 @@ typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000000)
+#define _FT_ARDUINO
 #endif
 
 #ifdef _FT_NORMAL_SECOND
@@ -67,6 +72,7 @@ typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1)
+#define _FT_UNIX
 #endif
 
 #ifdef _FT_NORMAL_MS
@@ -74,6 +80,7 @@ typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
+#define _FT_UNIX
 #endif
 
 #ifdef _FT_NORMAL_uS
@@ -81,6 +88,7 @@ typedef unsigned int time_measure_t; // 32 bits!
 #define FT_TIME_MEASURE_COMPLETE_MASK (INT_MAX)
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000000)
+#define _FT_UNIX
 #endif
 
 #ifdef _FT_EXPERIMENTAL1
@@ -90,6 +98,7 @@ typedef unsigned int time_measure_t;
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
 #define _FT_EXPERIMENTAL
+#define _FT_UNIX
 #endif
 
 #ifdef _FT_EXPERIMENTAL2
@@ -100,11 +109,34 @@ typedef unsigned short time_measure_t;
 #define FT_LONGEST_SLEEP (100)
 #define FT_ONE_SECOND (1000)
 #define _FT_EXPERIMENTAL
+#define _FT_UNIX
 #endif
+
+#ifdef _FT_EXPERIMENTAL3
+typedef unsigned int time_measure_t;
+#define FT_TIME_MEASURE_COMPLETE_MASK (UINT_MAX)
+#define FT_LONGEST_SLEEP (1000000000)
+#define FT_ONE_SECOND (1000000000)
+#define _FT_EXPERIMENTAL
+#define _FT_UNIX
+#endif
+
+#ifdef _FT_UNIX_GENERIC
+#define FT_ONE_UNIT_IN_NANOS (1000000)
+#endif
+
 //////////////////////////////////
 
+// Constants used internally!
 #define FT_TIME_MEASURE_HALF_MASK (FT_TIME_MEASURE_COMPLETE_MASK/2)
 #define FT_TIME_MEASURE_QUARTER_MASK (FT_TIME_MEASURE_COMPLETE_MASK/4)
+
+// The following constant is an important limit: the way the algorithm is written,
+// we *need* a limit. The theoretical limit is COMPLETE_MASK/2, but it's a little
+// dangerous, as if we miss this timer from 1 unit (say 1ms), it won't work
+// as expected. So we set this limit to COMPLETE_MASK/3. Why 3? Why not!
+// This is a lot safer!
+#define FT_MAX_DELAY (FT_TIME_MEASURE_COMPLETE_MASK/3)
 
 #define _FT_SIMPLE_TIMER_ALLOCATION
 //#define _FT_SIMPLE_TIMER_WITH_MALLOC : NOT IMPLEMENTED!!!
@@ -131,17 +163,18 @@ typedef struct FT_timer_t {
 extern void FT_debug_timers();
 
 // Published interface:
-extern void FT_init_timers();
+extern void FT_init();
+extern char FT_init_string[100];
 extern int FT_at_least_one_timer();
-extern void FT_check_and_do();
-extern void FT_sleep_and_do();
-extern void FT_force_sleep_and_do();
-extern void FT_loop_for_interrupts();
+extern void FT_check_and_do(); // Check if there is a timer to fire
+extern void FT_sleep_and_do(); // Sleep just what you need, the check...
+extern void FT_loop();
+extern void FT_infinite_loop();
 extern FT_timer_t* FT_insert_timer(time_measure_t delay, int repeat, void (*do_something)(), void* do_it_paramter);
 
 // Examples/tools
-extern void do_tick(void* param, FT_timer_t* timer);
-extern void do_nothing(void* param, FT_timer_t* timer);
+extern void FT_do_tick(void* param, FT_timer_t* timer);
+extern void FT_do_nothing(void* param, FT_timer_t* timer);
 
 // Crazy useful: force timers that may be in synchrony to fire at different times!
 extern void FT_desynchronize_timers(time_t* timer[], int nb_timers);
@@ -158,6 +191,8 @@ extern void FT_sleep(time_measure_t delay);
 extern time_measure_t FT_force_get_time(); // The value will be bounded
 extern void FT_force_sleep(time_measure_t delay); // *Will* sleep
 
+// Use this one if you really understand its purpose!
+extern void FT_force_sleep_and_do(); // Force the duration of the sleep, then check...
 
 ////
 extern int FT_compare_to(time_measure_t a, time_measure_t b);
