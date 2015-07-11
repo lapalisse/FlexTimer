@@ -28,6 +28,7 @@ Examples:
 - Repeating an action every n ms
 - You want to flash a light 10 times, then stop.
 - Do one thing after some time!
+- Repeating many different actions at different speeds without caring about what comes next
 
 It is meant to be extremely simple, but also efficient.
 
@@ -56,10 +57,10 @@ Summary of functionalities:
 - meant for Arduino (but works fine with Unix too: you need to recompile)
 - some control over alignment of tasks (you can desynchronize tasks)
 - some control over modification of timers
-- monothread-oriented: not suitable for multi-threading
+- monothread-oriented: everything has to be made from one thread (but you can use other threads to do heavy calculation for example)
 
 Limitation:
-- biggest delay is theoretically limited to 2^31-1, but this is a dangerous limit: miss one ms and it is broken: we use the value (2^31-1)/3
+- biggest delay is theoretically limited to 2^31-1, but this is a dangerous limit: miss one ms and it is broken: that's why we use the value (2^31-1)/3
 
 Ideas to improve it:
 - Making it simpler to choose a granularity (say: I want 1 unit = 15ms, with as long as is possible values)
@@ -76,13 +77,13 @@ Ideas to be implemented:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
 - C++ interface
-- Synchronizing two timers (ex: A happens 10ms after B)
+- Synchronizing two timers (ex: A happens 10ms after B, always)
 - 64-bit precision for delays (having big and small granularity at the same time)
 - Make it more precise (it's already not bad at all with a fine granularity)
 - Modify a timer: already possible
   - Being able to start at some time, stop at some time...
 - Make it suitable for multithreading: no: not needed: you don't want to
-- have "system" timers for special/internal use: no really needed
+- have "system" timers for special/internal use: not really needed
 
 Some of these features sound like something really advanced: I would implement them in some kind of "Event" library and keep the FlexTimer simple!
 
