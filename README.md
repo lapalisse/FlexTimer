@@ -73,6 +73,7 @@ That's the place where you could implement something more elaborate.
 
 Ideas to be implemented:
 - Activation/deactivation of a timer
+- Priorities: if two timers fire at very same time, the one whith the biggest priority fires first
 - More options to control the behaviour of timers, like:
   - Choose between catch up when you missed a tick or no catch up
   - Choose between remove a timer when finished or deactivate
