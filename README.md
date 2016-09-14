@@ -94,5 +94,6 @@ Other version:
 --------------
 A C++ version is needed and believe me, it's going to be great!
 
+I've started working on a C++ version, which is promissing! Check https://github.com/lapalisse/LTimer
 --
 Copyright 2015 Ludovic BERTSCH, ludovic.bertsch@gmail.com
