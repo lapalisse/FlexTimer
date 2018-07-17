@@ -1,2 +1,2 @@
-Timer KEYWORD1
-insertTimer KEYWORD2
+Timer	KEYWORD1
+insertTimer	KEYWORD2
